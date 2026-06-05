@@ -53,3 +53,7 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# curl_repl build artifacts
+/build/
+/curl_repl

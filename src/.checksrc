@@ -1,0 +1,5 @@
+# checksrc.pl configuration for curl_repl
+#
+# printf/fprintf are appropriate for a standalone application (not a library).
+disable BANNEDFUNC
+disable FIXME
