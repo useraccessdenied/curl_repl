@@ -163,9 +163,10 @@ jobs:
         run: |
           make cross TARGET_ARCH=${{ matrix.target_arch }} \
             CFLAGS_EXTRA=-DCURL_STATICLIB \
-            LIBS="/usr/${{ matrix.target_arch }}/lib/libcurl.a -lws2_32 -lcrypt32"
+            LIBS="/usr/${{ matrix.target_arch }}/lib/libcurl.a -lws2_32 -lcrypt32 -lbcrypt"
           mv ${{ github.event.repository.name }}.exe \
              ${{ github.event.repository.name }}-${{ matrix.target_arch }}.exe
+
 
       # --- Upload artifact ---
       - uses: actions/upload-artifact@v4
