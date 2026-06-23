@@ -36,9 +36,9 @@ cmd_telnet_disconnect(const char *args)
 }
 
 const struct command telnet_commands[] = {
-  {"send",       cmd_telnet_send,       "send <msg>   - send text to server"},
-  {"disconnect", cmd_telnet_disconnect, "disconnect   - close the connection"},
-  {NULL, NULL, NULL}
+  {"send",       NULL, cmd_telnet_send,       "send <msg>   - send text to server"},
+  {"disconnect", NULL, cmd_telnet_disconnect, "disconnect   - close the connection"},
+  {NULL, NULL, NULL, NULL}
 };
 
 int

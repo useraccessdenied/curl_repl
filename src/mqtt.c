@@ -37,9 +37,9 @@ cmd_mqtt_disconnect(const char *args)
 }
 
 const struct command mqtt_commands[] = {
-  {"publish",    cmd_mqtt_publish,    "publish <msg> - publish to the topic"},
-  {"disconnect", cmd_mqtt_disconnect, "disconnect    - close the connection"},
-  {NULL, NULL, NULL}
+  {"publish",    NULL, cmd_mqtt_publish,    "publish <msg> - publish to the topic"},
+  {"disconnect", NULL, cmd_mqtt_disconnect, "disconnect    - close the connection"},
+  {NULL, NULL, NULL, NULL}
 };
 
 int

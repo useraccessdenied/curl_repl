@@ -41,10 +41,10 @@ cmd_ws_disconnect(const char *args)
 }
 
 const struct command ws_commands[] = {
-  {"send",       cmd_ws_send,       "send <msg>   - send a text frame"},
-  {"ping",       cmd_ws_ping,       "ping         - send a ping frame"},
-  {"disconnect", cmd_ws_disconnect, "disconnect   - close the connection"},
-  {NULL, NULL, NULL}
+  {"send",       NULL, cmd_ws_send,       "send <msg>   - send a text frame"},
+  {"ping",       NULL, cmd_ws_ping,       "ping         - send a ping frame"},
+  {"disconnect", NULL, cmd_ws_disconnect, "disconnect   - close the connection"},
+  {NULL, NULL, NULL, NULL}
 };
 
 int

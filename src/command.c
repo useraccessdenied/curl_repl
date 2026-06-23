@@ -18,14 +18,12 @@ static int g_last_error = 0;
 static int cmd_connect(const char *args);
 static int cmd_help(const char *args);
 static int cmd_quit(const char *args);
-static int cmd_exit(const char *args);
 
 static const struct command GLOBAL_COMMANDS[] = {
-  {"connect", cmd_connect, "connect <url>  - connect to a server"},
-  {"help",    cmd_help,    "help           - list available commands"},
-  {"quit",    cmd_quit,    "quit           - exit the REPL"},
-  {"exit",    cmd_exit,    "exit           - exit the REPL"},
-  {NULL, NULL, NULL}
+  {"connect", "c",      cmd_connect, "connect/c <url>   - connect to a server"},
+  {"help",    "h",      cmd_help,    "help/h            - list available commands"},
+  {"quit",    "exit,e,q", cmd_quit,    "quit/exit/q/e     - exit the REPL"},
+  {NULL, NULL, NULL, NULL}
 };
 
 static const struct command *
@@ -35,6 +33,24 @@ find_in_table(const struct command *table, const char *name)
   for(i = 0; table[i].name; i++) {
     if(strcmp(table[i].name, name) == 0)
       return &table[i];
+    if(table[i].alt_name) {
+      const char *p = table[i].alt_name;
+      const char *comma;
+      do {
+        /* skip leading spaces */
+        while(*p == ' ') p++;
+        comma = strchr(p, ',');
+        if(comma) {
+          size_t len = (size_t)(comma - p);
+          if(strncmp(p, name, len) == 0 && name[len] == '\0')
+            return &table[i];
+          p = comma + 1;
+        } else {
+          if(strcmp(p, name) == 0)
+            return &table[i];
+        }
+      } while(comma);
+    }
   }
   return NULL;
 }
@@ -130,13 +146,6 @@ cmd_quit(const char *args)
   return 0;
 }
 
-static int
-cmd_exit(const char *args)
-{
-  (void)args;
-  command_set_quit();
-  return 0;
-}
 
 void
 command_dispatch(const char *line)

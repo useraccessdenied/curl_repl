@@ -14,6 +14,7 @@ typedef int (*cmd_handler_fn)(const char *args);
 
 struct command {
   const char     *name;
+  const char     *alt_name;
   cmd_handler_fn  handler;
   const char     *help_text;
 };
