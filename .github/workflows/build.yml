@@ -7,6 +7,8 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
 env:
   CURL_VERSION: 8.13.0
 
