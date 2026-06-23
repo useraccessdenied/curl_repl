@@ -57,3 +57,6 @@ dkms.conf
 # curl_repl build artifacts
 /build/
 /curl_repl
+
+# Distribution build artifacts
+/dist/

@@ -1,0 +1,180 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
+
+env:
+  CURL_VERSION: 8.13.0
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- Linux native ---
+          - name: linux-x86_64
+            os: ubuntu-latest
+            target_arch: x86_64-linux-gnu
+            dpkg_arch: amd64
+            build_type: native
+            suffix: ""
+
+          # --- Linux cross-compiled ---
+          - name: linux-i686
+            os: ubuntu-latest
+            target_arch: i686-linux-gnu
+            dpkg_arch: i386
+            cc_pkg: gcc-i686-linux-gnu
+            build_type: cross
+            suffix: ""
+
+          - name: linux-aarch64
+            os: ubuntu-latest
+            target_arch: aarch64-linux-gnu
+            dpkg_arch: arm64
+            cc_pkg: gcc-aarch64-linux-gnu
+            build_type: cross
+            suffix: ""
+
+          - name: linux-arm
+            os: ubuntu-latest
+            target_arch: arm-linux-gnueabihf
+            dpkg_arch: armhf
+            cc_pkg: gcc-arm-linux-gnueabihf
+            build_type: cross
+            suffix: ""
+
+          # --- macOS universal ---
+          - name: macos-universal
+            os: macos-latest
+            target_arch: universal
+            build_type: macos
+            suffix: ""
+
+          # --- Windows (cross-compiled from Linux with mingw-w64) ---
+          - name: windows-x86_64
+            os: ubuntu-latest
+            target_arch: x86_64-w64-mingw32
+            build_type: mingw
+            suffix: .exe
+
+          - name: windows-i686
+            os: ubuntu-latest
+            target_arch: i686-w64-mingw32
+            build_type: mingw
+            suffix: .exe
+
+          - name: windows-arm64
+            os: ubuntu-latest
+            target_arch: aarch64-w64-mingw32
+            build_type: mingw
+            suffix: .exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Native Linux ---
+      - name: Install Linux native deps
+        if: matrix.build_type == 'native'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libcurl4-openssl-dev pkg-config
+
+      # --- Cross-compiled Linux (multiarch) ---
+      - name: Install Linux cross deps
+        if: matrix.build_type == 'cross'
+        run: |
+          sudo dpkg --add-architecture ${{ matrix.dpkg_arch }}
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            ${{ matrix.cc_pkg }} \
+            libcurl4-openssl-dev:${{ matrix.dpkg_arch }} \
+            pkg-config:${{ matrix.dpkg_arch }}
+
+      # --- macOS ---
+      - name: Install macOS deps
+        if: matrix.build_type == 'macos'
+        run: brew install curl
+
+      # --- mingw-w64 ---
+      - name: Install mingw deps and build libcurl
+        if: matrix.build_type == 'mingw'
+        run: |
+          sudo apt-get update -qq
+          case "${{ matrix.target_arch }}" in
+            x86_64-*)  PKG="gcc-mingw-w64-x86-64"  ;;
+            i686-*)    PKG="gcc-mingw-w64-i686"    ;;
+            aarch64-*) PKG="gcc-mingw-w64"         ;;
+          esac
+          sudo apt-get install -y -qq "$PKG" cmake make
+          # Build libcurl from source for the mingw target
+          cd /tmp
+          curl -sL "https://curl.se/download/curl-${CURL_VERSION}.tar.gz" | tar xz
+          cd "curl-${CURL_VERSION}"
+          ./configure --host=${{ matrix.target_arch }} \
+            --disable-shared --enable-static \
+            --without-ssl --without-libssh2 --without-nghttp2 \
+            --disable-dict --disable-file --disable-ftp --disable-gopher \
+            --disable-imap --disable-ldap --disable-mqtt --disable-pop3 \
+            --disable-rtsp --disable-smb --disable-smtp --disable-telnet \
+            --disable-tftp --disable-versioned-symbols \
+            --prefix=/usr/${{ matrix.target_arch }}
+          make -j$(nproc)
+          sudo make install
+          rm -rf /tmp/curl-${CURL_VERSION}
+          echo "PKG_CONFIG_PATH=/usr/${{ matrix.target_arch }}/lib/pkgconfig" >> "$GITHUB_ENV"
+        env:
+          CURL_VERSION: ${{ env.CURL_VERSION }}
+
+      # --- Build steps ---
+      - name: Build (native Linux)
+        if: matrix.build_type == 'native'
+        run: |
+          make
+          mv ${{ github.event.repository.name }} \
+             ${{ github.event.repository.name }}-${{ matrix.target_arch }}
+
+      - name: Build (cross Linux)
+        if: matrix.build_type == 'cross'
+        run: |
+          make cross TARGET_ARCH=${{ matrix.target_arch }}
+          mv ${{ github.event.repository.name }} \
+             ${{ github.event.repository.name }}-${{ matrix.target_arch }}
+
+      - name: Build (macOS universal)
+        if: matrix.build_type == 'macos'
+        run: |
+          make macos-universal
+          mv ${{ github.event.repository.name }} \
+             ${{ github.event.repository.name }}-macos-universal
+
+      - name: Build (mingw)
+        if: matrix.build_type == 'mingw'
+        run: |
+          make cross TARGET_ARCH=${{ matrix.target_arch }}
+          mv ${{ github.event.repository.name }}.exe \
+             ${{ github.event.repository.name }}-${{ matrix.target_arch }}.exe
+
+      # --- Upload artifact ---
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ matrix.name }}
+          path: ${{ github.event.repository.name }}-${{ matrix.target_arch }}${{ matrix.suffix }}
+          if-no-files-found: error
+
+      # --- Attach to release ---
+      - name: Upload to release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "${{ github.event.repository.name }}-${{ matrix.target_arch }}${{ matrix.suffix }}" \
+            --clobber
