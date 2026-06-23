@@ -86,6 +86,13 @@ cmd_connect(const char *args)
     return -1;
   }
 
+  /* disconnect any active protocol before connecting a new one */
+  {
+    const struct protocol *active = protocol_active();
+    if(active)
+      active->disconnect_fn();
+  }
+
   if(proto->connect_fn(args) != 0)
     return -1;
 

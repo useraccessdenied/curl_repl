@@ -70,11 +70,14 @@ repl_run(void)
     ret = select(nfds, &readfds, NULL, NULL, &tv);
     if(ret < 0) {
       perror("select");
+      if(proto)
+        proto->disconnect_fn();
       break;
     }
 
     if(sock != CURL_SOCKET_BAD && FD_ISSET(sock, &readfds)) {
-      proto->recv_fn();
+      if(proto->recv_fn() < 0)
+        protocol_set_active(NULL);
       if(!FD_ISSET(STDIN_FILENO, &readfds))
         print_prompt();
     }

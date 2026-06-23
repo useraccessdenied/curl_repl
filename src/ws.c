@@ -73,6 +73,7 @@ ws_connect(const char *url)
     fprintf(stderr, "connect failed: %s\n", curl_easy_strerror(res));
     curl_easy_cleanup(g_ws.handle);
     g_ws.handle = NULL;
+    g_ws.sock = CURL_SOCKET_BAD;
     return -1;
   }
 
@@ -81,6 +82,7 @@ ws_connect(const char *url)
     fprintf(stderr, "could not get active socket\n");
     curl_easy_cleanup(g_ws.handle);
     g_ws.handle = NULL;
+    g_ws.sock = CURL_SOCKET_BAD;
     return -1;
   }
 
@@ -187,6 +189,11 @@ ws_recv_and_print(void)
   }
   if(meta->flags & CURLWS_PONG) {
     printf("\n[pong received]\n");
+    return 0;
+  }
+
+  if(meta->flags & CURLWS_BINARY) {
+    printf("\n< [binary frame, %zu bytes]\n", recvd);
     return 0;
   }
 

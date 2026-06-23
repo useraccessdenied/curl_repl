@@ -9,10 +9,20 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <curl/curl.h>
 #include "repl.h"
-
+#include "command.h"
 #define VERSION "0.1.0"
+static volatile sig_atomic_t g_interrupted = 0;
+
+static void
+sigint_handler(int sig)
+{
+  (void)sig;
+  g_interrupted = 1;
+  command_set_quit();
+}
 
 static void
 print_usage(void)
@@ -54,6 +64,7 @@ main(int argc, char *argv[])
     return 1;
   }
 
+  signal(SIGINT, sigint_handler);
   repl_run();
 
   curl_global_cleanup();

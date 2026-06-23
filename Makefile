@@ -1,5 +1,5 @@
 CC       = cc
-CFLAGS   = -Wall -Wextra -g $(shell curl-config --cflags)
+CFLAGS   = -std=c11 -Wall -Wextra -g $(shell curl-config --cflags)
 LIBS     = $(shell curl-config --libs)
 TARGET   = curl_repl
 SRCDIR   = src
