@@ -22,39 +22,35 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             target_arch: x86_64-linux-gnu
-            dpkg_arch: amd64
             build_type: native
             suffix: ""
 
-          # --- Linux cross-compiled ---
+          # --- Linux cross-compiled (build libcurl from source) ---
           - name: linux-i686
             os: ubuntu-latest
             target_arch: i686-linux-gnu
-            dpkg_arch: i386
-            cc_pkg: gcc-i686-linux-gnu
             build_type: cross
+            cc_pkg: gcc-i686-linux-gnu
             suffix: ""
 
           - name: linux-aarch64
             os: ubuntu-latest
             target_arch: aarch64-linux-gnu
-            dpkg_arch: arm64
-            cc_pkg: gcc-aarch64-linux-gnu
             build_type: cross
+            cc_pkg: gcc-aarch64-linux-gnu
             suffix: ""
 
           - name: linux-arm
             os: ubuntu-latest
             target_arch: arm-linux-gnueabihf
-            dpkg_arch: armhf
-            cc_pkg: gcc-arm-linux-gnueabihf
             build_type: cross
+            cc_pkg: gcc-arm-linux-gnueabihf
             suffix: ""
 
           # --- macOS universal ---
           - name: macos-universal
             os: macos-latest
-            target_arch: universal
+            target_arch: macos-universal
             build_type: macos
             suffix: ""
 
@@ -63,18 +59,21 @@ jobs:
             os: ubuntu-latest
             target_arch: x86_64-w64-mingw32
             build_type: mingw
+            cc_pkg: gcc-mingw-w64-x86-64
             suffix: .exe
 
           - name: windows-i686
             os: ubuntu-latest
             target_arch: i686-w64-mingw32
             build_type: mingw
+            cc_pkg: gcc-mingw-w64-i686
             suffix: .exe
 
           - name: windows-arm64
             os: ubuntu-latest
             target_arch: aarch64-w64-mingw32
             build_type: mingw
+            cc_pkg: gcc-mingw-w64
             suffix: .exe
 
     steps:
@@ -87,16 +86,32 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq libcurl4-openssl-dev pkg-config
 
-      # --- Cross-compiled Linux (multiarch) ---
-      - name: Install Linux cross deps
+      # --- Cross-compiled Linux (build libcurl from source) ---
+      - name: Install Linux cross deps and build libcurl
         if: matrix.build_type == 'cross'
         run: |
-          sudo dpkg --add-architecture ${{ matrix.dpkg_arch }}
           sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            ${{ matrix.cc_pkg }} \
-            libcurl4-openssl-dev:${{ matrix.dpkg_arch }} \
-            pkg-config:${{ matrix.dpkg_arch }}
+          sudo apt-get install -y -qq ${{ matrix.cc_pkg }} make
+          # Build libcurl from source for the cross target
+          cd /tmp
+          curl -sL "https://curl.se/download/curl-${CURL_VERSION}.tar.gz" | tar xz
+          cd "curl-${CURL_VERSION}"
+          ./configure --host=${{ matrix.target_arch }} \
+            --disable-shared --enable-static \
+            --without-ssl --without-libssh2 --without-nghttp2 \
+            --without-libpsl --without-zstd --without-brotli \
+            --without-zlib --without-libidn2 \
+            --disable-dict --disable-file --disable-ftp --disable-gopher \
+            --disable-imap --disable-ldap --disable-mqtt --disable-pop3 \
+            --disable-rtsp --disable-smb --disable-smtp --disable-telnet \
+            --disable-tftp --disable-versioned-symbols \
+            --prefix=/usr/${{ matrix.target_arch }}
+          make -j$(nproc)
+          sudo make install
+          rm -rf /tmp/curl-${CURL_VERSION}
+          echo "PKG_CONFIG_PATH=/usr/${{ matrix.target_arch }}/lib/pkgconfig" >> "$GITHUB_ENV"
+        env:
+          CURL_VERSION: ${{ env.CURL_VERSION }}
 
       # --- macOS ---
       - name: Install macOS deps
@@ -108,12 +123,7 @@ jobs:
         if: matrix.build_type == 'mingw'
         run: |
           sudo apt-get update -qq
-          case "${{ matrix.target_arch }}" in
-            x86_64-*)  PKG="gcc-mingw-w64-x86-64"  ;;
-            i686-*)    PKG="gcc-mingw-w64-i686"    ;;
-            aarch64-*) PKG="gcc-mingw-w64"         ;;
-          esac
-          sudo apt-get install -y -qq "$PKG" cmake make
+          sudo apt-get install -y -qq ${{ matrix.cc_pkg }} make
           # Build libcurl from source for the mingw target
           cd /tmp
           curl -sL "https://curl.se/download/curl-${CURL_VERSION}.tar.gz" | tar xz
@@ -121,6 +131,8 @@ jobs:
           ./configure --host=${{ matrix.target_arch }} \
             --disable-shared --enable-static \
             --without-ssl --without-libssh2 --without-nghttp2 \
+            --without-libpsl --without-zstd --without-brotli \
+            --without-zlib --without-libidn2 \
             --disable-dict --disable-file --disable-ftp --disable-gopher \
             --disable-imap --disable-ldap --disable-mqtt --disable-pop3 \
             --disable-rtsp --disable-smb --disable-smtp --disable-telnet \
@@ -153,7 +165,7 @@ jobs:
         run: |
           make macos-universal
           mv ${{ github.event.repository.name }} \
-             ${{ github.event.repository.name }}-macos-universal
+             ${{ github.event.repository.name }}-${{ matrix.target_arch }}
 
       - name: Build (mingw)
         if: matrix.build_type == 'mingw'
