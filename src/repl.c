@@ -11,7 +11,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <sys/select.h>
+#endif
 #include <curl/curl.h>
 #include "repl.h"
 #include "command.h"
