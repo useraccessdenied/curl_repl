@@ -69,13 +69,6 @@ jobs:
             cc_pkg: gcc-mingw-w64-i686
             suffix: .exe
 
-          - name: windows-arm64
-            os: ubuntu-latest
-            target_arch: aarch64-w64-mingw32
-            build_type: mingw
-            cc_pkg: gcc-mingw-w64
-            suffix: .exe
-
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +85,6 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ${{ matrix.cc_pkg }} make
-          # Build libcurl from source for the cross target
           cd /tmp
           curl -sL "https://curl.se/download/curl-${CURL_VERSION}.tar.gz" | tar xz
           cd "curl-${CURL_VERSION}"
@@ -118,13 +110,12 @@ jobs:
         if: matrix.build_type == 'macos'
         run: brew install curl
 
-      # --- mingw-w64 ---
+      # --- mingw-w64 (build libcurl from source) ---
       - name: Install mingw deps and build libcurl
         if: matrix.build_type == 'mingw'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ${{ matrix.cc_pkg }} make
-          # Build libcurl from source for the mingw target
           cd /tmp
           curl -sL "https://curl.se/download/curl-${CURL_VERSION}.tar.gz" | tar xz
           cd "curl-${CURL_VERSION}"
@@ -170,7 +161,9 @@ jobs:
       - name: Build (mingw)
         if: matrix.build_type == 'mingw'
         run: |
-          make cross TARGET_ARCH=${{ matrix.target_arch }}
+          # CURL_STATICLIB needed on Windows to avoid __imp_ symbol prefix
+          make cross TARGET_ARCH=${{ matrix.target_arch }} \
+            CFLAGS_EXTRA=-DCURL_STATICLIB
           mv ${{ github.event.repository.name }}.exe \
              ${{ github.event.repository.name }}-${{ matrix.target_arch }}.exe
 
