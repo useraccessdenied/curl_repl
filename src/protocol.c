@@ -9,6 +9,7 @@
  */
 #include <string.h>
 #include "protocol.h"
+#include "telnet.h"
 #include "ws.h"
 
 static const struct protocol PROTOCOLS[] = {
@@ -16,6 +17,9 @@ static const struct protocol PROTOCOLS[] = {
    ws_connect, ws_disconnect, ws_get_socket, ws_recv_and_print},
   {"wss", "websocket", ws_commands,
    ws_connect, ws_disconnect, ws_get_socket, ws_recv_and_print},
+  {"telnet", "telnet", telnet_commands,
+   telnet_connect, telnet_disconnect, telnet_get_socket,
+   telnet_recv_and_print},
   {NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 

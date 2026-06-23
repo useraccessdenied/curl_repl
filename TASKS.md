@@ -1,6 +1,6 @@
 # curl_repl — Roadmap
 
-## Milestone 1: WebSocket (in progress)
+## Milestone 1: WebSocket ✅
 
 Interactive WebSocket client using libcurl's `CURLOPT_CONNECT_ONLY=2` mode.
 Commands: `connect`, `send`, `ping`, `disconnect`, `help`, `quit`/`exit`.
@@ -8,7 +8,7 @@ Incoming messages are displayed via a `select()` loop that watches both
 stdin and the active WebSocket socket simultaneously, so the connection
 stays alive and messages arrive in real time without polling.
 
-## Milestone 2: Telnet
+## Milestone 2: Telnet (in progress)
 
 libcurl supports TELNET URLs (`telnet://host:port`). Add `telnet.c` with
 `connect`, `send`, and `disconnect` commands. Use `CURLOPT_TELNETOPTIONS`
