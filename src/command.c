@@ -13,6 +13,7 @@
 #include "protocol.h"
 
 static int g_quit = 0;
+static int g_last_error = 0;
 
 static int cmd_connect(const char *args);
 static int cmd_help(const char *args);
@@ -163,7 +164,7 @@ command_dispatch(const char *line)
     return;
   }
 
-  cmd->handler(args);
+  g_last_error = cmd->handler(args);
 }
 
 void
@@ -176,4 +177,10 @@ int
 command_should_quit(void)
 {
   return g_quit;
+}
+
+int
+command_last_error(void)
+{
+  return g_last_error;
 }

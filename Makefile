@@ -10,7 +10,8 @@ SRCS     = $(SRCDIR)/main.c \
            $(SRCDIR)/command.c \
            $(SRCDIR)/ws.c \
            $(SRCDIR)/telnet.c \
-           $(SRCDIR)/mqtt.c
+           $(SRCDIR)/mqtt.c \
+           $(SRCDIR)/script.c
 OBJS     = $(patsubst $(SRCDIR)/%.c, $(BUILDDIR)/%.o, $(SRCS))
 
 all: $(TARGET)

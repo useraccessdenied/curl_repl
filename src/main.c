@@ -13,7 +13,10 @@
 #include <curl/curl.h>
 #include "repl.h"
 #include "command.h"
+#include "script.h"
+
 #define VERSION "0.1.0"
+
 static volatile sig_atomic_t g_interrupted = 0;
 
 static void
@@ -30,15 +33,20 @@ print_usage(void)
   printf("Usage: curl_repl [options]\n");
   printf("\n");
   printf("Options:\n");
-  printf("  -h, --help     show this help and exit\n");
-  printf("  -v, --version  show version and exit\n");
+  printf("  -h, --help        show this help and exit\n");
+  printf("  -v, --version     show version and exit\n");
+  printf("  -f <file>         run commands from a script file\n");
+  printf("  -k, --keep-going  continue past errors in script mode\n");
   printf("\n");
-  printf("Once running, type 'help' to see available commands.\n");
+  printf("Without -f, runs interactively. Type 'help' inside for "
+         "commands.\n");
 }
 
 int
 main(int argc, char *argv[])
 {
+  const char *script_file = NULL;
+  int keep_going = 0;
   CURLcode res;
   int i;
 
@@ -52,6 +60,19 @@ main(int argc, char *argv[])
       printf("curl_repl " VERSION "\n");
       return 0;
     }
+    if(strcmp(argv[i], "-k") == 0 ||
+       strcmp(argv[i], "--keep-going") == 0) {
+      keep_going = 1;
+      continue;
+    }
+    if(strcmp(argv[i], "-f") == 0) {
+      if(i + 1 >= argc) {
+        fprintf(stderr, "-f requires a filename\n");
+        return 1;
+      }
+      script_file = argv[++i];
+      continue;
+    }
     fprintf(stderr, "unknown option: %s\n", argv[i]);
     print_usage();
     return 1;
@@ -64,9 +85,15 @@ main(int argc, char *argv[])
     return 1;
   }
 
-  signal(SIGINT, sigint_handler);
-  repl_run();
+  if(script_file) {
+    i = script_run(script_file, keep_going);
+  }
+  else {
+    signal(SIGINT, sigint_handler);
+    repl_run();
+    i = 0;
+  }
 
   curl_global_cleanup();
-  return 0;
+  return i;
 }

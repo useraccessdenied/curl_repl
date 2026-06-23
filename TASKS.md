@@ -28,7 +28,7 @@ libcurl supports MQTT (`mqtt://host/topic`). Commands: `subscribe`,
 `publish`, `disconnect`. The `subscribe` command uses the `select()` pattern
 from the WebSocket milestone to display incoming messages in real time.
 
-## Milestone 5: Script file execution
+## Milestone 5: Script file execution ✅
 
 Non-interactive mode: `curl_repl -f script.txt` reads a file and executes
 each line as a command in order, then exits. Lines starting with `#` are

@@ -21,5 +21,6 @@ struct command {
 void command_dispatch(const char *line);
 void command_set_quit(void);
 int  command_should_quit(void);
+int  command_last_error(void);
 
 #endif /* CURL_REPL_COMMAND_H */
