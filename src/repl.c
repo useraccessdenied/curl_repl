@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/select.h>
 #include <curl/curl.h>
 #include "repl.h"
@@ -69,6 +70,9 @@ repl_run(void)
 
     ret = select(nfds, &readfds, NULL, NULL, &tv);
     if(ret < 0) {
+      /* EINTR from SIGINT (Ctrl+C) — the signal handler set quit flag */
+      if(errno == EINTR)
+        continue;
       perror("select");
       if(proto)
         proto->disconnect_fn();
@@ -76,12 +80,10 @@ repl_run(void)
     }
 
     if(sock != CURL_SOCKET_BAD && FD_ISSET(sock, &readfds)) {
-      if(proto->recv_fn() < 0)
-        protocol_set_active(NULL);
+      proto->recv_fn();
       if(!FD_ISSET(STDIN_FILENO, &readfds))
         print_prompt();
     }
-
     if(FD_ISSET(STDIN_FILENO, &readfds)) {
       if(read_line(buf, INPUT_MAX) < 0)
         break;
@@ -91,6 +93,11 @@ repl_run(void)
       print_prompt();
     }
   }
+
+  /* Clean up any active protocol handle before exit */
+  proto = protocol_active();
+  if(proto)
+    proto->disconnect_fn();
 
   printf("\n");
 }

@@ -11,14 +11,15 @@
 #include <string.h>
 #include "script.h"
 #include "command.h"
+#include "protocol.h"
 
-#define LINE_MAX 1024
+#define SCRIPT_LINE_MAX 1024
 
 int
 script_run(const char *path, int keep_going)
 {
   FILE *fp;
-  char line[LINE_MAX];
+  char line[SCRIPT_LINE_MAX];
   int lineno = 0;
   int errors = 0;
   size_t len;
@@ -54,6 +55,13 @@ script_run(const char *path, int keep_going)
       if(!keep_going)
         break;
     }
+  }
+
+  /* Clean up any active protocol handle on script exit */
+  {
+    const struct protocol *proto = protocol_active();
+    if(proto)
+      proto->disconnect_fn();
   }
 
   fclose(fp);

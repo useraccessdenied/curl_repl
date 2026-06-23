@@ -17,13 +17,10 @@
 
 #define VERSION "0.1.0"
 
-static volatile sig_atomic_t g_interrupted = 0;
-
 static void
 sigint_handler(int sig)
 {
   (void)sig;
-  g_interrupted = 1;
   command_set_quit();
 }
 

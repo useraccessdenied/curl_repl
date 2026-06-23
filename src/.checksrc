@@ -3,3 +3,4 @@
 # printf/fprintf are appropriate for a standalone application (not a library).
 disable BANNEDFUNC
 disable FIXME
+disable ERRNOVAR
