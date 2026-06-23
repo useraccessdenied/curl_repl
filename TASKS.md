@@ -8,7 +8,7 @@ Incoming messages are displayed via a `select()` loop that watches both
 stdin and the active WebSocket socket simultaneously, so the connection
 stays alive and messages arrive in real time without polling.
 
-## Milestone 2: Telnet (in progress)
+## Milestone 2: Telnet ✅
 
 libcurl supports TELNET URLs (`telnet://host:port`). Add `telnet.c` with
 `connect`, `send`, and `disconnect` commands. Use `CURLOPT_TELNETOPTIONS`
@@ -22,7 +22,7 @@ libcurl supports SFTP (`sftp://user@host/path`). Commands: `ls`, `get`,
 so each command performs a full `curl_easy_perform()` call and no persistent
 socket select loop is needed.
 
-## Milestone 4: MQTT
+## Milestone 4: MQTT ✅
 
 libcurl supports MQTT (`mqtt://host/topic`). Commands: `subscribe`,
 `publish`, `disconnect`. The `subscribe` command uses the `select()` pattern

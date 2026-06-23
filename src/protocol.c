@@ -9,6 +9,7 @@
  */
 #include <string.h>
 #include "protocol.h"
+#include "mqtt.h"
 #include "telnet.h"
 #include "ws.h"
 
@@ -20,6 +21,10 @@ static const struct protocol PROTOCOLS[] = {
   {"telnet", "telnet", telnet_commands,
    telnet_connect, telnet_disconnect, telnet_get_socket,
    telnet_recv_and_print},
+  {"mqtt",  "mqtt",  mqtt_commands,
+   mqtt_connect, mqtt_disconnect, mqtt_get_socket, mqtt_recv_and_print},
+  {"mqtts", "mqtts", mqtt_commands,
+   mqtt_connect, mqtt_disconnect, mqtt_get_socket, mqtt_recv_and_print},
   {NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 
